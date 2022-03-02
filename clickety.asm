@@ -14,12 +14,9 @@ hInstance dd 0
 hWnd dd 0
 fileName1 db ".\sound\cliq-0\keydown.wav", 0
 fileName2 db ".\sound\cliq-0\keyup.wav", 0
-fileHandle dd 0
 bytesRead dd 0
-riffHeader resd 5
-dataChunkDesc dd 0
-dataChunkSize dd 0 ; FIXME, indirect assignment
-dataPtr dd 0
+dataPtr1 dd 0
+dataPtr2 dd 0
 
 lpDS     dd 0 ; -> IDirectSound
 lpDSBuf1 dd 0 ; -> IDirectSoundBuffer
@@ -31,15 +28,6 @@ pcm  dd 20001h  ; wFormatTag <= WAVE_FORMAT_PCM, nChannels <= 2
   dd MIXRATE*4
   dd 100004h ; wBitsPerSample <= 16, nBlockAlign <= 4
   dd 0       ; cbSize <= 0 (no extra info)
-;
-
-; DirectSound buffer descriptor
-bufDesc dd 20 ; DSBUFFERDESC1
-  ; (for older DirectX versions compatibility)
-  dd 14000h ; dwFlags <= DSBCAPS_STICKYFOCUS OR DSBCAPS_GETCURRENTPOSITION2
-  dd BUFFER_SIZE ; dwBufferBytes
-  dd 0
-  dd pcm ; lpwfxFormat
 ;
 
 Window: istruc WNDCLASSEX
@@ -66,7 +54,7 @@ Message: istruc MSG
   at MSG.pt,                   dd 0
 iend
 
-waveHeader: istruc WAVEFORMATEX
+WaveHeader: istruc WAVEFORMATEX
   at WAVEFORMATEX.wFormatTag,      dw 0
   at WAVEFORMATEX.nChannels,       dw 0
   at WAVEFORMATEX.nSamplesPerSec,  dd 0
@@ -81,23 +69,29 @@ section .text
 GLOBAL _Main
 _Main:
   call _CreateWindow
-  call _InitWaveOut
 
+  push dword [hWnd]
+  call _InitWaveOut@4
+
+  push dword dataPtr1
   push dword fileName1
-  push dword dataPtr
-  call _LoadFileToBuffer
+  call _LoadFileToBuffer@8
 
-  push dword dataPtr
+  push eax
+  push dword dataPtr1
   push dword lpDSBuf1
-  call _LoadWave
+  push dword lpDS
+  call _LoadWave@16
 
+  push dword dataPtr2
   push dword fileName2
-  push dword dataPtr
-  call _LoadFileToBuffer
+  call _LoadFileToBuffer@8
 
-  push dword dataPtr
+  push eax
+  push dword dataPtr2
   push dword lpDSBuf2
-  call _LoadWave
+  push dword lpDS
+  call _LoadWave@16
 
   call _ShowWindow
   call SetKeyHook
@@ -144,12 +138,12 @@ _WndProc:
 
 ._WndProc_emitSound_down:
   push dword lpDSBuf1
-  call _PlayWave
+  call _PlayWave@4
   jmp ._WndProc_return
 
 ._WndProc_emitSound_up:
   push dword lpDSBuf2
-  call _PlayWave
+  call _PlayWave@4
   jmp ._WndProc_return
 ;
 
@@ -218,6 +212,7 @@ _Message_loop:
 
 ._Message_loop_end:
 ._Return:
+  push dword lpDS
   call _DestroyWaveOut@4
 
   call DelKeyHook
@@ -231,185 +226,8 @@ _Message_loop:
   ret
 ;
 
-_InitWaveOut:
-  ; Request an instance of IDirectSound.
-  push 0
-  push dword lpDS
-  push 0
-  call [__imp__DirectSoundCreate@12]
-
-._setCooperativeLevel:
-  push 2   ; DSSCL_
-  push dword [hWnd]
-  mov eax, [lpDS]
-  mov ecx, [eax]
-  push eax ; this
-  call [ecx+24] ; IDirectSound::SetCooperativeLevel
-
-  ret
-;
-
-_LoadFileToBuffer:
-  push ebp
-  mov ebp, esp
-
-._openFile:
-  push 0
-  push 80h ; FILE_ATTRIBUTE_NORMAL
-  push 3 ; OPEN_EXISTING
-  push 0
-  push 1 ; FILE_SHARE_READ
-  push 80000000h ; GENERIC_READ
-  push dword [ebp + 12]
-  call [__imp__CreateFileA@28]
-
-  mov dword [fileHandle], eax
-
-._readRiffHeader:
-  push 0
-  push dword [bytesRead]
-  push 14h ; "RIFF    WAVEfmt ...."
-  push riffHeader
-  push dword [fileHandle]
-  call [__imp__ReadFile@20]
-
-._readWaveHeader:
-  push 0
-  push dword [bytesRead]
-  push 10h ; "sizeof WAVEFORMATEX"
-  push waveHeader
-  push dword [fileHandle]
-  call [__imp__ReadFile@20]
-
-._readChunkInfo:
-  push 0
-  push dword [bytesRead]
-  push 8h ; "data...."
-  push dataChunkDesc
-  push dword [fileHandle]
-  call [__imp__ReadFile@20]
-
-._allocateBuffer:
-  push dword [dataChunkSize]
-  push 0
-  call [__imp__GlobalAlloc@8]
-  mov ebx, [ebp + 8]
-  mov [ebx], eax
-
-._readChunkData:
-  push 0
-  push dword [bytesRead]
-  push dword [dataChunkSize]
-  push dword [ebx]
-  push dword [fileHandle]
-  call [__imp__ReadFile@20]
-
-._closeFile:
-  push dword [fileHandle]
-  call [__imp__CloseHandle@4]
-
-._LoadFileToBuffer_return:
-  mov esp, ebp
-  pop ebp
-  ret 12
-;
-
-; [ebp + 12] pointer to the wave data buffer 
-; [ebp + 8] existing DirectSound buffer ready to receive data
-_LoadWave:
-  push ebp
-  mov ebp, esp
-
-  mov eax, [ebp + 8]
-  mov [.localDSBuffer], eax
-
-  mov eax, [ebp + 12]
-  mov [.localDataBuffer], eax
-
-._createSoundBuffer:
-  push 0
-  push dword [.localDSBuffer]
-  push bufDesc
-  mov eax, [lpDS]
-  mov ecx, [eax]
-  push eax ; this
-  call [ecx+12] ; IDirectSound::CreateSoundBuffer
-
-._lockBuffer:
-  push 0 ; dwFlags
-  push .dwSize2
-  push .lpPtr2
-  push .dwSize1
-  push .lpPtr1
-  push BUFFER_SIZE
-  push 0
-  mov eax, dword [.localDSBuffer]
-  mov eax, [eax]
-  mov ecx, [eax]
-  push eax ; this
-  call [ecx+44] ; IDirectSoundBuffer::Lock
-
-._copyData:
-  mov eax, dword [.localDataBuffer]
-  mov esi, [eax]
-  mov edi, [.lpPtr1]
-  mov ecx, [dataChunkSize]
-  rep movsb
-
-._unlockBuffer:
-  push 0
-  push 0
-  push DWORD [.dwSize1]
-  push DWORD [.lpPtr1]
-  mov eax, dword [.localDSBuffer]
-  mov eax, [eax]
-  mov ecx, [eax]
-  push eax ; this
-  call [ecx+76] ; IDirectSoundBuffer::Unlock
-  
-._LoadWave_return:
-  mov esp, ebp
-  pop ebp
-  ret 16
-
-  .localDSBuffer dd 0
-  .localDataBuffer dd 0
-  .dwSize2 dd 0
-  .lpPtr2  dd 0
-  .dwSize1 dd 0
-  .lpPtr1  dd 0
-;
-
-_PlayWave:
-  push ebp
-  mov ebp, esp
-
-  mov eax, [ebp + 8]
-  mov [.localDSBuffer], eax
-
-  push 0   ; dwFlags = DSBPLAY_LOOPING
-  push 0
-  push 0
-  mov eax, dword [.localDSBuffer]
-  mov eax, [eax]
-  mov ecx, [eax]
-  push eax ; this
-  call [ecx+48] ; IDirectSoundBuffer::Play
-
-._PlayWave_return:
-  mov esp, ebp
-  pop ebp
-  ret 12
-
-  .localDSBuffer dd 0
-;
-
-_DestroyWaveOut@4:
-  ; Release DirectSound instance and free all buffers.
-  mov eax, [lpDS]
-  mov ecx, [eax]
-  push eax
-  call [ecx+8]  ; IDirectSound::Release
-
-  ret
-;
+%include "func-init-waveout.inc"
+%include "func-file-to-buffer.inc"
+%include "func-load-wave.inc"
+%include "func-play-wave.inc"
+%include "func-destroy-waveout.inc"

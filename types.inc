@@ -31,3 +31,17 @@ struc WAVEFORMATEX
   .wBitsPerSample  resw 1 ; number of bits per sample of mono data
   .cbSize          resw 1 ; the count in bytes of the size of
 endstruc
+
+struc DSBUFFERDESC
+  .dwSize          resd 1
+  .dwFlags         resd 1
+  .dwBufferBytes   resd 1
+  .dwReserved      resd 1
+  .lpwfxFormat     resd 1
+  .guid3DAlgorithm resd 1
+endstruc
+
+struc WAVEDATACHUNK
+  .chunkName       resd 1
+  .chunkSize       resd 1
+endstruc
