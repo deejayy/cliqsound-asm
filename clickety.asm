@@ -1,8 +1,9 @@
 %include "imports.inc"
 %include "types.inc"
 
-MIXRATE     equ 48000
-BUFFER_SIZE equ 10000h
+EXTERN SetKeyHook
+EXTERN DelKeyHook
+
 WM_DESTROY  equ 2
 WM_KEYDOWN  equ 100h
 WM_KEYUP    equ 101h
@@ -21,14 +22,6 @@ dataPtr2 dd 0
 lpDS     dd 0 ; -> IDirectSound
 lpDSBuf1 dd 0 ; -> IDirectSoundBuffer
 lpDSBuf2 dd 0 ; -> IDirectSoundBuffer
-
-; Wave format descriptor used to configure the DirectSound buffer
-pcm  dd 20001h  ; wFormatTag <= WAVE_FORMAT_PCM, nChannels <= 2
-  dd MIXRATE
-  dd MIXRATE*4
-  dd 100004h ; wBitsPerSample <= 16, nBlockAlign <= 4
-  dd 0       ; cbSize <= 0 (no extra info)
-;
 
 Window: istruc WNDCLASSEX
   at WNDCLASSEX.cbSize,        dd WNDCLASSEX_size
@@ -54,16 +47,6 @@ Message: istruc MSG
   at MSG.pt,                   dd 0
 iend
 
-WaveHeader: istruc WAVEFORMATEX
-  at WAVEFORMATEX.wFormatTag,      dw 0
-  at WAVEFORMATEX.nChannels,       dw 0
-  at WAVEFORMATEX.nSamplesPerSec,  dd 0
-  at WAVEFORMATEX.nAvgBytesPerSec, dd 0
-  at WAVEFORMATEX.nBlockAlign,     dw 0
-  at WAVEFORMATEX.wBitsPerSample,  dw 0
-  at WAVEFORMATEX.cbSize,          dw WAVEFORMATEX_size
-iend
-
 section .text
 
 GLOBAL _Main
@@ -71,27 +54,29 @@ _Main:
   call _CreateWindow
 
   push dword [hWnd]
-  call _InitWaveOut@4
+  call InitWaveOut@4
+
+  mov dword [lpDS], eax
 
   push dword dataPtr1
   push dword fileName1
-  call _LoadFileToBuffer@8
+  call LoadFileToBuffer@8
 
   push eax
   push dword dataPtr1
   push dword lpDSBuf1
   push dword lpDS
-  call _LoadWave@16
+  call LoadWave@16
 
   push dword dataPtr2
   push dword fileName2
-  call _LoadFileToBuffer@8
+  call LoadFileToBuffer@8
 
   push eax
   push dword dataPtr2
   push dword lpDSBuf2
   push dword lpDS
-  call _LoadWave@16
+  call LoadWave@16
 
   call _ShowWindow
   call SetKeyHook
@@ -138,12 +123,12 @@ _WndProc:
 
 ._WndProc_emitSound_down:
   push dword lpDSBuf1
-  call _PlayWave@4
+  call PlayWave@4
   jmp ._WndProc_return
 
 ._WndProc_emitSound_up:
   push dword lpDSBuf2
-  call _PlayWave@4
+  call PlayWave@4
   jmp ._WndProc_return
 ;
 
@@ -213,7 +198,7 @@ _Message_loop:
 ._Message_loop_end:
 ._Return:
   push dword lpDS
-  call _DestroyWaveOut@4
+  call DestroyWaveOut@4
 
   call DelKeyHook
 

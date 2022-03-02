@@ -1,5 +1,5 @@
 ; [ebp + 8] DirectSound output device
-_DestroyWaveOut@4:
+DestroyWaveOut@4:
   push ebp
   mov ebp, esp
 

@@ -1,6 +1,6 @@
 ; [ebp + 12] buffer address store ptr
 ; [ebp + 8] fileName PTR
-_LoadFileToBuffer@8:
+LoadFileToBuffer@8:
   push ebp
   mov ebp, esp
 
@@ -28,7 +28,7 @@ _LoadFileToBuffer@8:
   push 0
   push dword [.bytesRead]
   push 10h ; "sizeof WAVEFORMATEX"
-  push WaveHeader
+  push .WaveHeader
   push dword [.fileHandle]
   call [__imp__ReadFile@20]
 
@@ -74,4 +74,15 @@ _LoadFileToBuffer@8:
     at WAVEDATACHUNK.chunkName, dd 0
     at WAVEDATACHUNK.chunkSize, dd 0
   iend
+
+  .WaveHeader: istruc WAVEFORMATEX
+    at WAVEFORMATEX.wFormatTag,      dw 0
+    at WAVEFORMATEX.nChannels,       dw 0
+    at WAVEFORMATEX.nSamplesPerSec,  dd 0
+    at WAVEFORMATEX.nAvgBytesPerSec, dd 0
+    at WAVEFORMATEX.nBlockAlign,     dw 0
+    at WAVEFORMATEX.wBitsPerSample,  dw 0
+    at WAVEFORMATEX.cbSize,          dw WAVEFORMATEX_size
+  iend
+
 ;

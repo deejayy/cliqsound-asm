@@ -2,7 +2,7 @@
 ; [ebp + 16] pointer to the wave data buffer
 ; [ebp + 12] existing DirectSound buffer ready to receive data
 ; [ebp + 8] DirectSound output device
-_LoadWave@16:
+LoadWave@16:
   push ebp
   mov ebp, esp
 
@@ -18,6 +18,8 @@ _LoadWave@16:
 
   mov eax, [ebp + 20]
   mov [.chunkSize], eax
+
+  mov [.bufDesc + DSBUFFERDESC.dwBufferBytes], eax
 
 ._createSoundBuffer:
   push 0
@@ -77,9 +79,15 @@ _LoadWave@16:
   .bufDesc: istruc DSBUFFERDESC
     at DSBUFFERDESC.dwSize,          dd 20
     at DSBUFFERDESC.dwFlags,         dd 00014000h
-    at DSBUFFERDESC.dwBufferBytes,   dd BUFFER_SIZE
+    at DSBUFFERDESC.dwBufferBytes,   dd 0
     at DSBUFFERDESC.dwReserved,      dd 0
     at DSBUFFERDESC.lpwfxFormat,     dd pcm
     at DSBUFFERDESC.guid3DAlgorithm, dd 0
   iend
+
+  pcm  dd 20001h  ; wFormatTag <= WAVE_FORMAT_PCM, nChannels <= 2
+    dd 48000
+    dd 48000*4
+    dd 100004h ; wBitsPerSample <= 16, nBlockAlign <= 4
+    dd 0       ; cbSize <= 0 (no extra info)
 ;

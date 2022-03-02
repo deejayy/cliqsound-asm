@@ -12,6 +12,7 @@ GLOBAL DelKeyHook
 EXPORT DelKeyHook
 
 section .text
+
 _hInstance dd 0
 _hHook dd 0
 _windowHandle dd 0

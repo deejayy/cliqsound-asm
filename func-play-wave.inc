@@ -1,5 +1,5 @@
 ; [ebp + 8] DirectSoundBuffer object, should be already loaded with sound data
-_PlayWave@4:
+PlayWave@4:
   push ebp
   mov ebp, esp
 
