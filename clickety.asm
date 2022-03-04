@@ -1,30 +1,38 @@
+section .data
+
 %include "imports.inc"
 %include "types.inc"
 
 EXTERN SetKeyHook
 EXTERN DelKeyHook
 
-section .data
+CHANNELS equ 8
 
 WindowClass db "CliqAsm", 0
-hWnd dd 0
-fileName1 db ".\sound\cliq-0\keydown.wav", 0
-fileName2 db ".\sound\cliq-0\keyup.wav", 0
-bytesRead dd 0
-dataPtr1 dd 0
-dataPtr2 dd 0
+fileName1 db ".\sound\cherry-mx-white\cherry-mx-white-down01.wav", 0
+fileName2 db ".\sound\cherry-mx-white\cherry-mx-white-up01.wav", 0
+currentChannel dd 0
+currentBuffer dd 0
 
-lpDS     dd 0 ; -> IDirectSound
-lpDSBuf1 dd 0 ; -> IDirectSoundBuffer
-lpDSBuf2 dd 0 ; -> IDirectSoundBuffer
+section .bss
+
+hWnd resd 1
+bytesRead resd 1
+dataPtr1 resd 1
+dataPtr2 resd 1
+dataSize1 resd 1
+dataSize2 resd 1
+
+lpDS    resd 1 ; -> IDirectSound
+lpDSBuf resd CHANNELS ; -> IDirectSoundBuffer array
 
 Message: istruc MSG
-  at MSG.hwnd,                 dd 0
-  at MSG.message,              dd 0
-  at MSG.wParam,               dw 0
-  at MSG.lParam,               dw 0
-  at MSG.time,                 dd 0
-  at MSG.pt,                   dd 0
+  at MSG.hwnd,    resd 1
+  at MSG.message, resd 1
+  at MSG.wParam,  resw 1
+  at MSG.lParam,  resw 1
+  at MSG.time,    resd 1
+  at MSG.pt,      resd 1
 iend
 
 section .text
@@ -42,22 +50,12 @@ _Main:
   push dword dataPtr1
   push dword fileName1
   call LoadFileToBuffer@8
-
-  push eax
-  push dword dataPtr1
-  push dword lpDSBuf1
-  push dword lpDS
-  call LoadWave@16
+  mov [dataSize1], eax
 
   push dword dataPtr2
   push dword fileName2
   call LoadFileToBuffer@8
-
-  push eax
-  push dword dataPtr2
-  push dword lpDSBuf2
-  push dword lpDS
-  call LoadWave@16
+  mov [dataSize2], eax
 
   push dword [hWnd]
   call _ShowWindow
@@ -65,22 +63,65 @@ _Main:
   jmp _Message_loop
 ;
 
-%include "func-window-handling.inc"
-
 _PlayKeyDown:
-  push dword lpDSBuf1
+  call _SetCurrentBuffer
+
+  push dword [dataSize1]
+  push dword dataPtr1
+  push dword [currentBuffer]
+  push dword lpDS
+  call LoadWave@16
+
+  push dword [currentBuffer]
   call PlayWave@4
   ret
 ;
 
 _PlayKeyUp:
-  push dword lpDSBuf2
+  call _SetCurrentBuffer
+
+  push dword [dataSize2]
+  push dword dataPtr2
+  push dword [currentBuffer]
+  push dword lpDS
+  call LoadWave@16
+
+  push dword [currentBuffer]
   call PlayWave@4
   ret
 ;
 
+_SetCurrentBuffer:
+  mov eax, [currentChannel]
+  add eax, 1
+  xor edx, edx
+  mov ecx, CHANNELS
+  div ecx
+  mov eax, edx
+  mov [currentChannel], eax
+  mov ecx, 4
+  mul ecx
+  add eax, lpDSBuf
+  mov ecx, eax
+  ; mov eax, [eax]
+  mov [currentBuffer], eax
+
+  mov eax, [eax]
+  cmp eax, 0
+
+  je ._SetCurrentBuffer_return
+
+  push dword [currentBuffer]
+  call DestroyWaveOut@4
+
+._SetCurrentBuffer_return:
+  ret
+;
+
+%include "func-window-handling.inc"
 %include "func-init-waveout.inc"
 %include "func-file-to-buffer.inc"
 %include "func-load-wave.inc"
 %include "func-play-wave.inc"
 %include "func-destroy-waveout.inc"
+

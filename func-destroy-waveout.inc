@@ -1,4 +1,4 @@
-; [ebp + 8] DirectSound output device
+; [ebp + 8] DirectSound/Buffer output device
 DestroyWaveOut@4:
   push ebp
   mov ebp, esp
@@ -7,7 +7,7 @@ DestroyWaveOut@4:
   mov eax, [eax]
   mov ecx, [eax]
   push eax
-  call [ecx+8]  ; IDirectSound::Release
+  call [ecx+8]  ; IDirectSound::Release, IDirectSoundBuffer::Release (IUnkown actually)
 
   mov esp, ebp
   pop ebp
