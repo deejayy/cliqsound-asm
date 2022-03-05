@@ -45,3 +45,14 @@ struc WAVEDATACHUNK
   .chunkName       resd 1
   .chunkSize       resd 1
 endstruc
+
+struc SYSTEMTIME
+  .wYear           resw 1
+  .wMonth          resw 1
+  .wDayOfWeek      resw 1
+  .wDay            resw 1
+  .wHour           resw 1
+  .wMinute         resw 1
+  .wSecond         resw 1
+  .wMilliseconds   resw 1
+endstruc
