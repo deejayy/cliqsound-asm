@@ -78,7 +78,7 @@ LoadWave@16:
 
   .bufDesc: istruc DSBUFFERDESC
     at DSBUFFERDESC.dwSize,          dd 20
-    at DSBUFFERDESC.dwFlags,         dd 00014000h
+    at DSBUFFERDESC.dwFlags,         dd 0x8000
     at DSBUFFERDESC.dwBufferBytes,   dd 0
     at DSBUFFERDESC.dwReserved,      dd 0
     at DSBUFFERDESC.lpwfxFormat,     dd pcm
