@@ -2,6 +2,8 @@ _WndProc:
   push ebp
   mov ebp, esp
 
+  cmp dword [ebp + 12], 0x001 ; WM_CREATE
+  je ._WndProc_init
   cmp dword [ebp + 12], 0x002 ; WM_DESTROY
   je ._WndProc_destroy
   cmp dword [ebp + 12], 0x401
@@ -24,6 +26,30 @@ _WndProc:
   xor eax, eax
   jmp ._WndProc_return
 
+._WndProc_init:
+  mov eax, [ebp + 8]
+  cmp eax, 0
+  jz ._WndProc_return
+
+  push 0
+  push dword [Window + WNDCLASSEX.hInstance]
+  push 100
+  push dword [ebp + 8]
+  push 300
+  push 300
+  push 0
+  push 0
+  push 100000h|200000h|10000000h|40000000h|40h|10h|1h ; WS_HSCROLL|WS_VSCROLL|WS_VISIBLE|WS_CHILD|LBS_HASSTRINGS|LBS_OWNERDRAWFIXED|LBS_NOTIFY
+  push 0
+  push .list_class
+  push 00000200h ; WS_EX_CLIENTEDGE
+
+	call [__imp__CreateWindowExA@48]
+
+  mov [listBoxHandle], eax
+
+  jmp ._WndProc_return
+
 ._WndProc_emitSound:
   mov eax, dword [ebp + 20]
   shr eax, 30
@@ -43,6 +69,8 @@ _WndProc:
 ._WndProc_emitSound_up:
   call _PlayKeyUp
   jmp ._WndProc_return
+
+  .list_class db "LISTBOX", 0
 ;
 
 _CreateWindow@4:
@@ -51,7 +79,7 @@ _CreateWindow@4:
 
   push 0
   call [__imp__GetModuleHandleA@4]
-  mov ebx, .Window
+  mov ebx, Window
   mov [ebx + WNDCLASSEX.hInstance], eax
 
   push 32512 ; IDC_ARROW
@@ -64,7 +92,7 @@ _CreateWindow@4:
   call [__imp__LoadIconA@8]
   mov [ebx + WNDCLASSEX.hIcon], eax
 
-  push .Window
+  push Window
   call [__imp__RegisterClassExA@4]
 
   push 0
@@ -84,21 +112,6 @@ _CreateWindow@4:
   mov esp, ebp
   pop ebp
   ret 4
-
-  .Window: istruc WNDCLASSEX
-    at WNDCLASSEX.cbSize,        dd WNDCLASSEX_size
-    at WNDCLASSEX.style,         dd 3 ; CS_HREDRAW|CS_VREDRAW
-    at WNDCLASSEX.lpfnWndProc,   dd _WndProc
-    at WNDCLASSEX.cbClsExtra,    dd 0
-    at WNDCLASSEX.cbWndExtra,    dd 0
-    at WNDCLASSEX.hInstance,     dd 0
-    at WNDCLASSEX.hIcon,         dd 0
-    at WNDCLASSEX.hCursor,       dd 0
-    at WNDCLASSEX.hbrBackground, dd 5 ; COLOR_WINDOW
-    at WNDCLASSEX.lpszMenuName,  dd 0
-    at WNDCLASSEX.lpszClassName, dd WindowClass
-    at WNDCLASSEX.hIconSm,       dd 0
-  iend
 ;
 
 ; [ebp + 8] hWnd

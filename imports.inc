@@ -21,3 +21,4 @@ EXTERN __imp__ReadFile@20
 EXTERN __imp__CloseHandle@4
 EXTERN __imp__GlobalAlloc@8
 EXTERN __imp__GetSystemTime@4
+EXTERN __imp__SendMessageA@16

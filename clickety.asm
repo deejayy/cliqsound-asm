@@ -45,9 +45,25 @@ sysTime: istruc SYSTEMTIME
   at SYSTEMTIME.wMilliseconds, dw 0
 iend
 
+Window: istruc WNDCLASSEX
+  at WNDCLASSEX.cbSize,        dd WNDCLASSEX_size
+  at WNDCLASSEX.style,         dd 3 ; CS_HREDRAW|CS_VREDRAW
+  at WNDCLASSEX.lpfnWndProc,   dd _WndProc
+  at WNDCLASSEX.cbClsExtra,    dd 0
+  at WNDCLASSEX.cbWndExtra,    dd 0
+  at WNDCLASSEX.hInstance,     dd 0
+  at WNDCLASSEX.hIcon,         dd 0
+  at WNDCLASSEX.hCursor,       dd 0
+  at WNDCLASSEX.hbrBackground, dd 5 ; COLOR_WINDOW
+  at WNDCLASSEX.lpszMenuName,  dd 0
+  at WNDCLASSEX.lpszClassName, dd WindowClass
+  at WNDCLASSEX.hIconSm,       dd 0
+iend
+
 section .bss
 
 hWnd resd 1
+listBoxHandle resd 1
 bytesRead resd 1
 
 dataPtrsDown resd MAXFILES
