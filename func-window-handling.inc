@@ -35,11 +35,11 @@ _WndProc:
   push dword [Window + WNDCLASSEX.hInstance]
   push 100
   push dword [ebp + 8]
-  push 300
-  push 300
+  push 200
+  push 200
   push 0
   push 0
-  push 100000h|200000h|10000000h|40000000h|40h|10h|1h ; WS_HSCROLL|WS_VSCROLL|WS_VISIBLE|WS_CHILD|LBS_HASSTRINGS|LBS_OWNERDRAWFIXED|LBS_NOTIFY
+  push 100000h|200000h|10000000h|40000000h|40h|1h ; WS_HSCROLL|WS_VSCROLL|WS_VISIBLE|WS_CHILD|LBS_HASSTRINGS|LBS_NOTIFY
   push 0
   push .list_class
   push 00000200h ; WS_EX_CLIENTEDGE

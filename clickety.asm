@@ -156,6 +156,12 @@ _Main:
 ;
 
 _PlayKeyDown:
+  push dword fileNameDown1
+  push 0
+  push 180h ; LB_ADDSTRING
+  push dword [listBoxHandle]
+  call [__imp__SendMessageA@16]
+
   call _SetCurrentDSBuffer
 
   mov eax, [sysTime + SYSTEMTIME.wMilliseconds]
